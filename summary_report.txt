@@ -1,0 +1,6 @@
+AUTOMATED WEB SCRAPING REPORT
+===================================
+Total books extracted: 20
+Average price: £38.05
+Minimum price: £13.99
+Maximum price: £57.25
