@@ -1,9 +1,9 @@
 BOOK SCRAPING SUMMARY REPORT
 ============================
 Total books extracted: 60
-Average price: £35.00
-Minimum price: £12.84
-Maximum price: £57.31
+Average price: GBP 35.00
+Minimum price: GBP 12.84
+Maximum price: GBP 57.31
 Average rating: 3.00/5
 
 Availability counts:

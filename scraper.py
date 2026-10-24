@@ -14,7 +14,7 @@ headers = {
     "User-Agent": "Mozilla/5.0 (compatible; BookScraper/1.0)"
 }
 
-# Retry failed requests
+# Retry logic
 retry_strategy = Retry(
     total=3,
     backoff_factor=1,
@@ -24,61 +24,61 @@ retry_strategy = Retry(
 
 session = requests.Session()
 session.headers.update(headers)
-adapter = HTTPAdapter(max_retries=retry_strategy)
-session.mount("https://", adapter)
+session.mount("https://", HTTPAdapter(max_retries=retry_strategy))
 
 books = []
-
 rating_map = {
-    "One": 1,
-    "Two": 2,
-    "Three": 3,
-    "Four": 4,
-    "Five": 5
+    "One": 1, "Two": 2, "Three": 3,
+    "Four": 4, "Five": 5
 }
 
-# Scrape the first 3 pages
-for page in range(1, 4):
-    if page > 1:
-        time.sleep(1)  # Rate limiting
+try:
+    # Scrape first 3 pages with rate limiting
+    for page in range(1, 4):
+        if page > 1:
+            time.sleep(1)
 
-    url = BASE_URL.format(page)
-    response = session.get(url, timeout=20)
-    response.raise_for_status()
+        response = session.get(BASE_URL.format(page), timeout=20)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
 
-    soup = BeautifulSoup(response.text, "html.parser")
+        for item in soup.select("article.product_pod"):
+            title_tag = item.select_one("h3 a")
+            price_tag = item.select_one(".price_color")
+            rating_tag = item.select_one(".star-rating")
+            stock_tag = item.select_one(".availability")
 
-    for item in soup.select("article.product_pod"):
-        title_tag = item.select_one("h3 a")
-        price_tag = item.select_one(".price_color")
-        rating_tag = item.select_one(".star-rating")
-        stock_tag = item.select_one(".availability")
+            if not all([title_tag, price_tag, rating_tag, stock_tag]):
+                continue
 
-        if not all([title_tag, price_tag, rating_tag, stock_tag]):
-            continue
-
-        rating_word = next(
-            (word for word in rating_tag.get("class", [])
-             if word in rating_map),
-            ""
-        )
-
-        price_text = (
-            price_tag.get_text(strip=True)
-            .replace("£", "")
-            .replace("Â", "")
-        )
-
-        books.append({
-            "title": title_tag.get("title", title_tag.get_text(strip=True)),
-            "price": price_text,
-            "rating": rating_map.get(rating_word, ""),
-            "availability": " ".join(
-                stock_tag.get_text(" ", strip=True).split()
+            rating_word = next(
+                (word for word in rating_tag.get("class", [])
+                 if word in rating_map),
+                ""
             )
-        })
 
-# Save structured CSV
+            price_text = (
+                price_tag.get_text(strip=True)
+                .replace("£", "")
+                .replace("Â", "")
+            )
+
+            books.append({
+                "title": title_tag.get("title", title_tag.get_text(strip=True)),
+                "price": price_text,
+                "rating": rating_map.get(rating_word, ""),
+                "availability": " ".join(
+                    stock_tag.get_text(" ", strip=True).split()
+                )
+            })
+
+finally:
+    session.close()
+
+if not books:
+    raise RuntimeError("No books extracted. Check the website connection.")
+
+# Save CSV
 columns = ["title", "price", "rating", "availability"]
 
 with open("books_data.csv", "w", newline="", encoding="utf-8-sig") as file:
@@ -98,10 +98,8 @@ with open("summary_report.txt", "w", encoding="utf-8") as file:
 
     if prices:
         file.write(f"Average price: GBP {mean(prices):.2f}\n")
-file.write(f"Minimum price: GBP {min(prices):.2f}\n")
-file.write(f"Maximum price: GBP {max(prices):.2f}\n")
-        file.write(f"Minimum price: £{min(prices):.2f}\n")
-        file.write(f"Maximum price: £{max(prices):.2f}\n")
+        file.write(f"Minimum price: GBP {min(prices):.2f}\n")
+        file.write(f"Maximum price: GBP {max(prices):.2f}\n")
 
     if ratings:
         file.write(f"Average rating: {mean(ratings):.2f}/5\n")
@@ -110,9 +108,8 @@ file.write(f"Maximum price: GBP {max(prices):.2f}\n")
     for status, count in availability_counts.items():
         file.write(f"{status}: {count}\n")
 
-session.close()
-
 print("Scraping completed successfully!")
 print("Total books extracted:", len(books))
 print("Data saved to books_data.csv")
 print("Report saved to summary_report.txt")
+
