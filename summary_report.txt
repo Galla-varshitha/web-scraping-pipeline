@@ -1,6 +1,19 @@
-AUTOMATED WEB SCRAPING REPORT
-===================================
-Total books extracted: 20
-Average price: £38.05
-Minimum price: £13.99
-Maximum price: £57.25
+WEB SCRAPING SUMMARY REPORT
+==============================
+Total books extracted: 1000
+Books with valid prices: 1000
+Average price: £35.07
+Minimum price: £10.00
+Maximum price: £59.99
+
+Rating distribution:
+1 star(s): 226 books
+2 star(s): 196 books
+3 star(s): 203 books
+4 star(s): 179 books
+5 star(s): 196 books
+
+Output files:
+- books_data.csv
+- books_data.json
+- summary_report.txt
